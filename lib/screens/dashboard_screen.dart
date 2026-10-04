@@ -12,6 +12,7 @@ import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -20,9 +21,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const Color primaryGreen = Color(0xFF0B9B67);
   static const Color expenseRed = Colors.redAccent;
   static const Color fuelOrange = Color(0xFFE67E22);
+
   int currentTab = 0;
+
   final TextEditingController searchController = TextEditingController();
+
   String transactionFilter = 'All';
+
   final List<Map<String, dynamic>> transactions = [
     {
       'type': 'Expense',
@@ -49,6 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'currency': 'PKR',
     },
   ];
+
   @override
   void dispose() {
     searchController.dispose();
@@ -64,9 +70,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _goalsPage(),
       _profilePage(),
     ];
+
     return Scaffold(
-      body: IndexedStack(index: currentTab, children: pages),
+      body: IndexedStack(
+        index: currentTab,
+        children: pages,
+      ),
       bottomNavigationBar: NavigationBar(
+        height: 70,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: const WidgetStatePropertyAll<TextStyle>(
+          TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         selectedIndex: currentTab,
         onDestinationSelected: (index) {
           setState(() {
@@ -112,6 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final income = _total('Income');
     final expense = _total('Expense');
     final balance = income - expense;
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -125,7 +144,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 20),
               _quickActions(),
               const SizedBox(height: 24),
-              _sectionHeader('Quick Tools', 'Manage your finances faster'),
+              _sectionHeader(
+                'Quick Tools',
+                'Manage your finances faster',
+              ),
               const SizedBox(height: 12),
               _quickTools(),
               const SizedBox(height: 26),
@@ -137,17 +159,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (transactions.isEmpty)
                 _emptyTransactions()
               else
-                ...transactions
-                    .take(5)
-                    .map(
-                      (transaction) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _transactionCard(
-                          transaction,
-                          showActions: false,
-                        ),
-                      ),
+                ...transactions.take(5).map(
+                  (transaction) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _transactionCard(
+                      transaction,
+                      showActions: false,
                     ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -178,12 +198,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Text(
                 'Expense Manager',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               SizedBox(height: 3),
               Text(
                 'Manage your money smarter',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
               ),
             ],
           ),
@@ -200,12 +226,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _balanceCard(double balance, double income, double expense) {
+  Widget _balanceCard(
+    double balance,
+    double income,
+    double expense,
+  ) {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0B9B67), Color(0xFF087D56)],
+          colors: [
+            Color(0xFF0B9B67),
+            Color(0xFF087D56),
+          ],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -261,7 +294,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _balanceItem(String title, double amount, IconData icon) {
+  Widget _balanceItem(
+    String title,
+    double amount,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
@@ -270,7 +307,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 19),
+          Icon(
+            icon,
+            color: Colors.white,
+            size: 19,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -278,7 +319,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -335,11 +379,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(17),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 17, horizontal: 12),
+          padding: const EdgeInsets.symmetric(
+            vertical: 17,
+            horizontal: 12,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 22),
+              Icon(
+                icon,
+                color: color,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -358,11 +409,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _quickTools() {
     final tools = [
-      ('Calculator', Icons.calculate_rounded, const Color(0xFF4361EE)),
-      ('Fuel', Icons.local_gas_station_rounded, fuelOrange),
-      ('Bills', Icons.receipt_long_rounded, const Color(0xFF8E44AD)),
-      ('Budget', Icons.account_balance_wallet_rounded, primaryGreen),
+      (
+        'Calculator',
+        Icons.calculate_rounded,
+        const Color(0xFF4361EE),
+      ),
+      (
+        'Fuel',
+        Icons.local_gas_station_rounded,
+        fuelOrange,
+      ),
+      (
+        'Bills',
+        Icons.receipt_long_rounded,
+        const Color(0xFF8E44AD),
+      ),
+      (
+        'Budget',
+        Icons.account_balance_wallet_rounded,
+        primaryGreen,
+      ),
     ];
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -374,7 +442,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       itemBuilder: (context, index) {
         final tool = tools[index];
-        return _toolCard(title: tool.$1, icon: tool.$2, color: tool.$3);
+
+        return _toolCard(
+          title: tool.$1,
+          icon: tool.$2,
+          color: tool.$3,
+        );
       },
     );
   }
@@ -401,17 +474,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
           } else if (title == 'Fuel') {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const FuelCalculatorScreen()),
+              MaterialPageRoute(
+                builder: (_) => const FuelCalculatorScreen(),
+              ),
             );
           } else if (title == 'Bills') {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const BillsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const BillsScreen(),
+              ),
             );
           } else if (title == 'Budget') {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const BudgetsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const BudgetsScreen(),
+              ),
             );
           }
         },
@@ -428,7 +507,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(icon, color: color, size: 21),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 21,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -448,6 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _transactionsPage() {
     final filtered = _filteredTransactions();
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -457,12 +541,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               const Text(
                 'Transactions',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 5),
               Text(
                 '${transactions.length} recorded transactions',
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 18),
               TextField(
@@ -502,7 +592,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ...filtered.map(
                   (transaction) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _transactionCard(transaction, showActions: true),
+                    child: _transactionCard(
+                      transaction,
+                      showActions: true,
+                    ),
                   ),
                 ),
             ],
@@ -514,6 +607,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _filterChip(String value) {
     final selected = transactionFilter == value;
+
     return FilterChip(
       selected: selected,
       label: Text(value),
@@ -529,17 +623,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Map<String, dynamic>> _filteredTransactions() {
     final search = searchController.text.trim().toLowerCase();
+
     return transactions.where((transaction) {
       final matchesFilter =
           transactionFilter == 'All' ||
           transaction['type'] == transactionFilter;
+
       final text = [
         transaction['category'],
         transaction['note'],
         transaction['type'],
         transaction['currency'],
       ].join(' ').toLowerCase();
-      final matchesSearch = search.isEmpty || text.contains(search);
+
+      final matchesSearch =
+          search.isEmpty || text.contains(search);
+
       return matchesFilter && matchesSearch;
     }).toList();
   }
@@ -555,6 +654,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final note = transaction['note'] as String;
     final date = transaction['date'] as DateTime;
     final color = isIncome ? primaryGreen : expenseRed;
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -609,7 +709,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : '$note • ${_formatDate(date)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.grey, fontSize: 11),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -633,7 +736,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       onPressed: () => _editTransaction(transaction),
-                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                      ),
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
@@ -664,17 +770,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: const Column(
         children: [
-          Icon(Icons.receipt_long_outlined, size: 50, color: Colors.grey),
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 50,
+            color: Colors.grey,
+          ),
           SizedBox(height: 12),
           Text(
             'No transactions found',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
           ),
           SizedBox(height: 5),
           Text(
             'Add your first income or expense to get started.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -682,7 +798,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _reportsPage() {
-    return ReportsScreen(transactions: transactions);
+    return ReportsScreen(
+      transactions: transactions,
+    );
   }
 
   Widget _goalsPage() {
@@ -699,7 +817,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               const Text(
                 'Profile',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 20),
               Container(
@@ -735,7 +856,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           SizedBox(height: 4),
                           Text(
                             'Manage your preferences and app settings',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -747,23 +871,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _profileOption(
                 icon: Icons.settings_rounded,
                 title: 'Settings',
-                subtitle: 'Currency, language, theme and preferences',
+                subtitle:
+                    'Currency, language, theme and preferences',
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const SettingsScreen(),
+                    ),
                   );
                 },
               ),
               _profileOption(
                 icon: Icons.calculate_rounded,
                 title: 'Finance Calculator',
-                subtitle: 'Calculator, percentage, discount and more',
+                subtitle:
+                    'Calculator, percentage, discount and more',
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const FinanceCalculatorScreen(),
+                      builder: (_) =>
+                          const FinanceCalculatorScreen(),
                     ),
                   );
                 },
@@ -772,7 +901,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 icon: Icons.feedback_outlined,
                 title: 'Feedback & Support',
                 subtitle: 'Tell us how we can improve',
-                onTap: () => _showComingSoon('Feedback & Support'),
+                onTap: () =>
+                    _showComingSoon('Feedback & Support'),
               ),
               _profileOption(
                 icon: Icons.help_outline_rounded,
@@ -804,7 +934,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: _cardDecoration(),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 5,
+        ),
         leading: Container(
           width: 45,
           height: 45,
@@ -812,19 +945,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: primaryGreen.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(13),
           ),
-          child: Icon(icon, color: primaryGreen),
+          child: Icon(
+            icon,
+            color: primaryGreen,
+          ),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(color: Colors.grey, fontSize: 11),
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 11,
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+        ),
       ),
     );
   }
 
-  Widget _sectionHeader(String title, String subtitle) {
+  Widget _sectionHeader(
+    String title,
+    String subtitle,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -841,7 +990,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 3),
               Text(
                 subtitle,
-                style: const TextStyle(color: Colors.grey, fontSize: 11),
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -851,13 +1003,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   BoxDecoration _cardDecoration() {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final dark =
+        Theme.of(context).brightness == Brightness.dark;
+
     return BoxDecoration(
-      color: dark ? const Color(0xFF18211E) : Colors.white,
+      color: dark
+          ? const Color(0xFF18211E)
+          : Colors.white,
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: dark ? 0.10 : 0.035),
+          color: Colors.black.withValues(
+            alpha: dark ? 0.10 : 0.035,
+          ),
           blurRadius: 15,
           offset: const Offset(0, 4),
         ),
@@ -869,16 +1027,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return transactions
         .where(
           (transaction) =>
-              transaction['type'] == type && transaction['currency'] == 'PKR',
+              transaction['type'] == type &&
+              transaction['currency'] == 'PKR',
         )
         .fold<double>(
           0,
-          (sum, transaction) => sum + (transaction['amount'] as double),
+          (sum, transaction) =>
+              sum + (transaction['amount'] as double),
         );
   }
 
-  String _formatAmount(double amount, [String currencyCode = 'PKR']) {
+  String _formatAmount(
+    double amount, [
+    String currencyCode = 'PKR',
+  ]) {
     final currency = AppCurrencies.find(currencyCode);
+
     return '${currency.symbol} '
         '${amount.toStringAsFixed(0)}';
   }
@@ -895,7 +1059,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MaterialPageRoute(
         builder: (_) => AddTransactionScreen(
           initialType: type,
-          onSaved: (savedType, amount, category, date, note, currency) {
+          onSaved: (
+            savedType,
+            amount,
+            category,
+            date,
+            note,
+            currency,
+          ) {
             setState(() {
               transactions.insert(0, {
                 'type': savedType,
@@ -912,7 +1083,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _editTransaction(Map<String, dynamic> transaction) {
+  void _editTransaction(
+    Map<String, dynamic> transaction,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -924,7 +1097,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           initialDate: transaction['date'],
           initialNote: transaction['note'],
           initialCurrency: transaction['currency'],
-          onSaved: (savedType, amount, category, date, note, currency) {
+          onSaved: (
+            savedType,
+            amount,
+            category,
+            date,
+            note,
+            currency,
+          ) {
             setState(() {
               transaction['type'] = savedType;
               transaction['amount'] = amount;
@@ -939,7 +1119,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _deleteTransaction(Map<String, dynamic> transaction) {
+  void _deleteTransaction(
+    Map<String, dynamic> transaction,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -954,11 +1136,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: expenseRed),
+              style: FilledButton.styleFrom(
+                backgroundColor: expenseRed,
+              ),
               onPressed: () {
                 setState(() {
                   transactions.remove(transaction);
                 });
+
                 Navigator.pop(dialogContext);
               },
               child: const Text('Delete'),
@@ -974,7 +1159,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text('$feature will be connected in the next phase.'),
+          content: Text(
+            '$feature will be connected in the next phase.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
