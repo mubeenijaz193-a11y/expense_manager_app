@@ -118,7 +118,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: _inputDecoration(
                             hint: 'Enter your password',
                             icon: Icons.lock_outline_rounded,
+
+                            // Correct password visibility button.
                             suffix: IconButton(
+                              tooltip: hidePassword
+                                  ? 'Show password'
+                                  : 'Hide password',
                               onPressed: () {
                                 setState(() {
                                   hidePassword = !hidePassword;
