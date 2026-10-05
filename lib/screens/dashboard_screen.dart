@@ -5,7 +5,7 @@ import 'add_transaction_screen.dart';
 import 'finance_calculator_screen.dart';
 import 'budgets_screen.dart';
 import 'bills_screen.dart';
-import 'fuel_calculator_screen.dart';
+import 'fuel_vehicles_screen.dart';
 import 'goals_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
@@ -18,83 +18,90 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  static const Color primaryGreen = Color(0xFF0B9B67);
-  static const Color expenseRed = Colors.redAccent;
-  static const Color fuelOrange = Color(0xFFE67E22);
+  int _selectedIndex = 0;
 
-  int currentTab = 0;
-
-  final TextEditingController searchController = TextEditingController();
-
-  String transactionFilter = 'All';
-
-  final List<Map<String, dynamic>> transactions = [
+  final List<Map<String, dynamic>> _transactions = [
     {
-      'type': 'Expense',
-      'amount': 2500.0,
-      'category': 'Food & Dining',
-      'date': DateTime(2026, 10, 4),
-      'note': 'Dinner',
-      'currency': 'PKR',
-    },
-    {
-      'type': 'Income',
-      'amount': 75000.0,
+      'title': 'Monthly Salary',
       'category': 'Salary',
-      'date': DateTime(2026, 10, 1),
-      'note': 'Monthly salary',
+      'amount': 150000.0,
+      'type': 'income',
       'currency': 'PKR',
+      'date': DateTime.now(),
     },
     {
-      'type': 'Expense',
-      'amount': 5000.0,
-      'category': 'Fuel',
-      'date': DateTime(2026, 9, 30),
-      'note': 'Car fuel',
+      'title': 'Grocery Shopping',
+      'category': 'Groceries',
+      'amount': 8500.0,
+      'type': 'expense',
       'currency': 'PKR',
+      'date': DateTime.now(),
+    },
+    {
+      'title': 'Fuel',
+      'category': 'Fuel',
+      'amount': 5000.0,
+      'type': 'expense',
+      'currency': 'PKR',
+      'date': DateTime.now(),
     },
   ];
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
+  AppCurrency get _currency => AppCurrencies.defaultCurrency;
+
+  double get _income {
+    return _transactions
+        .where(
+          (transaction) =>
+              transaction['type'] == 'income' &&
+              transaction['currency'] == _currency.code,
+        )
+        .fold<double>(
+          0,
+          (sum, transaction) => sum + (transaction['amount'] as double),
+        );
+  }
+
+  double get _expenses {
+    return _transactions
+        .where(
+          (transaction) =>
+              transaction['type'] == 'expense' &&
+              transaction['currency'] == _currency.code,
+        )
+        .fold<double>(
+          0,
+          (sum, transaction) => sum + (transaction['amount'] as double),
+        );
+  }
+
+  double get _balance => _income - _expenses;
+
+  String _money(double amount) {
+    return '${_currency.symbol} ${amount.toStringAsFixed(0)}';
   }
 
   @override
   Widget build(BuildContext context) {
     final pages = [
-      _homePage(),
-      _transactionsPage(),
-      _reportsPage(),
-      _goalsPage(),
-      _profilePage(),
+      _buildHome(),
+      _buildTransactions(),
+      ReportsScreen(transactions: _transactions),
+      const GoalsScreen(),
+      _buildProfile(),
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: currentTab,
-        children: pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         height: 70,
+        selectedIndex: _selectedIndex,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        labelTextStyle: const WidgetStatePropertyAll<TextStyle>(
-          TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        selectedIndex: currentTab,
         onDestinationSelected: (index) {
           setState(() {
-            currentTab = index;
+            _selectedIndex = index;
           });
         },
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF151D1A)
-            : Colors.white,
-        indicatorColor: primaryGreen.withValues(alpha: 0.14),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -112,8 +119,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Reports',
           ),
           NavigationDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag_rounded),
+            icon: Icon(Icons.savings_outlined),
+            selectedIcon: Icon(Icons.savings_rounded),
             label: 'Goals',
           ),
           NavigationDestination(
@@ -126,99 +133,88 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _homePage() {
-    final income = _total('Income');
-    final expense = _total('Expense');
-    final balance = income - expense;
+  Widget _buildHome() {
+    final theme = Theme.of(context);
 
     return SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-            children: [
-              _homeHeader(),
-              const SizedBox(height: 22),
-              _balanceCard(balance, income, expense),
-              const SizedBox(height: 20),
-              _quickActions(),
-              const SizedBox(height: 24),
-              _sectionHeader(
-                'Quick Tools',
-                'Manage your finances faster',
-              ),
-              const SizedBox(height: 12),
-              _quickTools(),
-              const SizedBox(height: 26),
-              _sectionHeader(
-                'Recent Transactions',
-                'View your latest activity',
-              ),
-              const SizedBox(height: 12),
-              if (transactions.isEmpty)
-                _emptyTransactions()
-              else
-                ...transactions.take(5).map(
-                  (transaction) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _transactionCard(
-                      transaction,
-                      showActions: false,
+      child: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {});
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 18),
+                  _buildBalanceCard(),
+                  const SizedBox(height: 18),
+                  _buildSummaryCards(),
+                  const SizedBox(height: 26),
+                  Text(
+                    'Quick Add',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
-            ],
+                  const SizedBox(height: 12),
+                  _buildQuickAdd(),
+                  const SizedBox(height: 28),
+                  Text(
+                    'Quick Tools',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildQuickTools(),
+                  const SizedBox(height: 28),
+                  _buildRecentTransactions(),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _homeHeader() {
+  Widget _buildHeader() {
     return Row(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: primaryGreen.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: const Icon(
-            Icons.account_balance_wallet_rounded,
-            color: primaryGreen,
-            size: 26,
-          ),
-        ),
-        const SizedBox(width: 13),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Expense Manager',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w800),
               ),
-              SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
-                'Manage your money smarter',
+                'Manage your money with confidence',
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.60),
+                  fontSize: 13,
                 ),
               ),
             ],
           ),
         ),
         IconButton(
+          tooltip: 'Settings',
           onPressed: () {
-            setState(() {
-              currentTab = 4;
-            });
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
           },
           icon: const Icon(Icons.settings_outlined),
         ),
@@ -226,65 +222,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _balanceCard(
-    double balance,
-    double income,
-    double expense,
-  ) {
+  Widget _buildBalanceCard() {
+    final theme = Theme.of(context);
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Color(0xFF0B9B67),
-            Color(0xFF087D56),
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withValues(alpha: 0.78),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: primaryGreen.withValues(alpha: 0.22),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Total Balance',
             style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 7),
           Text(
-            _formatAmount(balance),
+            _money(_balance),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 31,
-              fontWeight: FontWeight.w800,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
           Row(
             children: [
-              Expanded(
-                child: _balanceItem(
-                  'Income',
-                  income,
-                  Icons.arrow_downward_rounded,
-                ),
+              const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Colors.white,
+                size: 20,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _balanceItem(
-                  'Expenses',
-                  expense,
-                  Icons.arrow_upward_rounded,
+              const SizedBox(width: 8),
+              Text(
+                '${_currency.flag} ${_currency.code}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.90),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -294,44 +282,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _balanceItem(
-    String title,
-    double amount,
-    IconData icon,
-  ) {
+  Widget _buildSummaryCards() {
+    return Row(
+      children: [
+        Expanded(
+          child: _summaryCard(
+            title: 'Income',
+            amount: _income,
+            icon: Icons.arrow_downward_rounded,
+            positive: true,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _summaryCard(
+            title: 'Expenses',
+            amount: _expenses,
+            icon: Icons.arrow_upward_rounded,
+            positive: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryCard({
+    required String title,
+    required double amount,
+    required IconData icon,
+    required bool positive,
+  }) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(15),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 19,
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: theme.colorScheme.primary),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  _formatAmount(amount),
+                  _money(amount),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    fontSize: 14,
                   ),
                 ),
               ],
@@ -342,127 +362,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _quickActions() {
+  Widget _buildQuickAdd() {
     return Row(
       children: [
         Expanded(
-          child: _actionButton(
-            title: 'Add Income',
-            icon: Icons.add_circle_outline_rounded,
-            color: primaryGreen,
-            onTap: () => _openAddTransaction('Income'),
+          child: _quickAddButton(
+            title: 'Income',
+            icon: Icons.add_rounded,
+            onTap: () => _openAddTransaction(true),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _actionButton(
-            title: 'Add Expense',
-            icon: Icons.remove_circle_outline_rounded,
-            color: expenseRed,
-            onTap: () => _openAddTransaction('Expense'),
+          child: _quickAddButton(
+            title: 'Expense',
+            icon: Icons.remove_rounded,
+            onTap: () => _openAddTransaction(false),
           ),
         ),
       ],
     );
   }
 
-  Widget _actionButton({
+  Widget _quickAddButton({
     required String title,
     required IconData icon,
-    required Color color,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: color.withValues(alpha: 0.09),
-      borderRadius: BorderRadius.circular(17),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(17),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: 17,
-            horizontal: 12,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: color,
-                size: 22,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return FilledButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon),
+      label: Text(title),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }
 
-  Widget _quickTools() {
+  Widget _buildQuickTools() {
     final tools = [
-      (
-        'Calculator',
-        Icons.calculate_rounded,
-        const Color(0xFF4361EE),
-      ),
-      (
-        'Fuel',
-        Icons.local_gas_station_rounded,
-        fuelOrange,
-      ),
-      (
-        'Bills',
-        Icons.receipt_long_rounded,
-        const Color(0xFF8E44AD),
-      ),
-      (
-        'Budget',
-        Icons.account_balance_wallet_rounded,
-        primaryGreen,
-      ),
+      {
+        'title': 'Calculator',
+        'subtitle': 'Finance calculator',
+        'icon': Icons.calculate_rounded,
+      },
+      {
+        'title': 'Fuel',
+        'subtitle': 'Fuel & vehicles',
+        'icon': Icons.local_gas_station_rounded,
+      },
+      {
+        'title': 'Bills',
+        'subtitle': 'Manage bills',
+        'icon': Icons.receipt_long_rounded,
+      },
+      {
+        'title': 'Budget',
+        'subtitle': 'Spending limits',
+        'icon': Icons.account_balance_wallet_rounded,
+      },
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: tools.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.9,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 260,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 2.25,
       ),
       itemBuilder: (context, index) {
         final tool = tools[index];
 
-        return _toolCard(
-          title: tool.$1,
-          icon: tool.$2,
-          color: tool.$3,
+        return _buildToolCard(
+          title: tool['title']! as String,
+          subtitle: tool['subtitle']! as String,
+          icon: tool['icon']! as IconData,
         );
       },
     );
   }
 
-  Widget _toolCard({
+  Widget _buildToolCard({
     required String title,
+    required String subtitle,
     required IconData icon,
-    required Color color,
   }) {
+    final theme = Theme.of(context);
+
     return Material(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF18211E)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(17),
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
+        borderRadius: BorderRadius.circular(18),
         onTap: () {
           if (title == 'Calculator') {
             Navigator.push(
@@ -472,132 +467,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             );
           } else if (title == 'Fuel') {
+            // IMPORTANT:
+            // This opens the NEW Fuel & Vehicles screen.
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const FuelCalculatorScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const FuelVehiclesScreen()),
             );
           } else if (title == 'Bills') {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const BillsScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const BillsScreen()),
             );
           } else if (title == 'Budget') {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const BudgetsScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const BudgetsScreen()),
             );
           }
         },
-        borderRadius: BorderRadius.circular(17),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: theme.dividerColor.withValues(alpha: 0.12),
+            ),
+          ),
+          child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 45,
+                height: 45,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(13),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 21,
-                ),
+                child: Icon(icon, color: theme.colorScheme.primary),
               ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _transactionsPage() {
-    final filtered = _filteredTransactions();
-
-    return SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-            children: [
-              const Text(
-                'Transactions',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                '${transactions.length} recorded transactions',
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Search transactions...',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: searchController.text.isNotEmpty
-                      ? IconButton(
-                          onPressed: () {
-                            searchController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.clear_rounded),
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 14),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _filterChip('All'),
-                    const SizedBox(width: 8),
-                    _filterChip('Income'),
-                    const SizedBox(width: 8),
-                    _filterChip('Expense'),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
-              if (filtered.isEmpty)
-                _emptyTransactions()
-              else
-                ...filtered.map(
-                  (transaction) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _transactionCard(
-                      transaction,
-                      showActions: true,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -605,191 +541,178 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _filterChip(String value) {
-    final selected = transactionFilter == value;
+  Widget _buildRecentTransactions() {
+    final theme = Theme.of(context);
 
-    return FilterChip(
-      selected: selected,
-      label: Text(value),
-      onSelected: (_) {
-        setState(() {
-          transactionFilter = value;
-        });
-      },
-      selectedColor: primaryGreen.withValues(alpha: 0.14),
-      checkmarkColor: primaryGreen,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Recent Transactions',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedIndex = 1;
+                });
+              },
+              child: const Text('View All'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_transactions.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: theme.dividerColor.withValues(alpha: 0.12),
+              ),
+            ),
+            child: const Center(child: Text('No transactions yet')),
+          )
+        else
+          ..._transactions.reversed
+              .take(5)
+              .map(
+                (transaction) => _transactionTile(transaction, compact: true),
+              ),
+      ],
     );
   }
 
-  List<Map<String, dynamic>> _filteredTransactions() {
-    final search = searchController.text.trim().toLowerCase();
-
-    return transactions.where((transaction) {
-      final matchesFilter =
-          transactionFilter == 'All' ||
-          transaction['type'] == transactionFilter;
-
-      final text = [
-        transaction['category'],
-        transaction['note'],
-        transaction['type'],
-        transaction['currency'],
-      ].join(' ').toLowerCase();
-
-      final matchesSearch =
-          search.isEmpty || text.contains(search);
-
-      return matchesFilter && matchesSearch;
-    }).toList();
-  }
-
-  Widget _transactionCard(
-    Map<String, dynamic> transaction, {
-    required bool showActions,
-  }) {
-    final isIncome = transaction['type'] == 'Income';
-    final amount = transaction['amount'] as double;
-    final currency = transaction['currency'] as String;
-    final category = transaction['category'] as String;
-    final note = transaction['note'] as String;
-    final date = transaction['date'] as DateTime;
-    final color = isIncome ? primaryGreen : expenseRed;
-
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF18211E)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark
-                  ? 0.10
-                  : 0.035,
+  Widget _buildTransactions() {
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Transactions',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Add Transaction',
+                  onPressed: () => _openAddTransaction(false),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                ),
+              ],
             ),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+          ),
+          Expanded(
+            child: _transactions.isEmpty
+                ? const Center(child: Text('No transactions yet'))
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    itemCount: _transactions.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      return Dismissible(
+                        key: ValueKey(_transactions[index].hashCode),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Colors.red,
+                          ),
+                        ),
+                        onDismissed: (_) {
+                          setState(() {
+                            _transactions.removeAt(index);
+                          });
+                        },
+                        child: _transactionTile(_transactions[index]),
+                      );
+                    },
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _transactionTile(
+    Map<String, dynamic> transaction, {
+    bool compact = false,
+  }) {
+    final theme = Theme.of(context);
+    final isIncome = transaction['type'] == 'income';
+    final amount = transaction['amount'] as double;
+    final currencyCode = transaction['currency'] as String;
+
+    final currency = AppCurrencies.find(currencyCode);
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 13 : 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: compact ? 44 : 50,
+            height: compact ? 44 : 50,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
+              color: theme.colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               isIncome
                   ? Icons.arrow_downward_rounded
                   : Icons.arrow_upward_rounded,
-              color: color,
+              color: theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(width: 13),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  category,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  note.isEmpty
-                      ? '${_formatDate(date)} • $currency'
-                      : '$note • ${_formatDate(date)}',
+                  transaction['title'] as String,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  transaction['category'] as String,
+                  style: TextStyle(
                     fontSize: 11,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isIncome ? '+' : '-'} '
-                '${_formatAmount(amount, currency)}',
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
-              ),
-              if (showActions)
-                Row(
-                  children: [
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _editTransaction(transaction),
-                      icon: const Icon(
-                        Icons.edit_outlined,
-                        size: 18,
-                      ),
-                    ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _deleteTransaction(transaction),
-                      icon: const Icon(
-                        Icons.delete_outline_rounded,
-                        size: 18,
-                        color: expenseRed,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _emptyTransactions() {
-    return Container(
-      padding: const EdgeInsets.all(35),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF18211E)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Column(
-        children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 50,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 12),
           Text(
-            'No transactions found',
+            '${isIncome ? '+' : '-'} '
+            '${currency.symbol} ${amount.toStringAsFixed(0)}',
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              fontSize: 16,
-            ),
-          ),
-          SizedBox(height: 5),
-          Text(
-            'Add your first income or expense to get started.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
+              color: isIncome
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.error,
             ),
           ),
         ],
@@ -797,356 +720,149 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _reportsPage() {
-    return ReportsScreen(
-      transactions: transactions,
-    );
-  }
+  Widget _buildProfile() {
+    final theme = Theme.of(context);
 
-  Widget _goalsPage() {
-    return const GoalsScreen();
-  }
-
-  Widget _profilePage() {
     return SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-            children: [
-              const Text(
-                'Profile',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: _cardDecoration(),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 62,
-                      height: 62,
-                      decoration: BoxDecoration(
-                        color: primaryGreen.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color: primaryGreen,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'My Profile',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Manage your preferences and app settings',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              _profileOption(
-                icon: Icons.settings_rounded,
-                title: 'Settings',
-                subtitle:
-                    'Currency, language, theme and preferences',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SettingsScreen(),
-                    ),
-                  );
-                },
-              ),
-              _profileOption(
-                icon: Icons.calculate_rounded,
-                title: 'Finance Calculator',
-                subtitle:
-                    'Calculator, percentage, discount and more',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const FinanceCalculatorScreen(),
-                    ),
-                  );
-                },
-              ),
-              _profileOption(
-                icon: Icons.feedback_outlined,
-                title: 'Feedback & Support',
-                subtitle: 'Tell us how we can improve',
-                onTap: () =>
-                    _showComingSoon('Feedback & Support'),
-              ),
-              _profileOption(
-                icon: Icons.help_outline_rounded,
-                title: 'Help & FAQ',
-                subtitle: 'Get help using Expense Manager',
-                onTap: () => _showComingSoon('Help & FAQ'),
-              ),
-              _profileOption(
-                icon: Icons.info_outline_rounded,
-                title: 'About',
-                subtitle: 'App information and version',
-                onTap: () => _showComingSoon('About'),
-              ),
-            ],
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+        children: [
+          const Text(
+            'Profile',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
           ),
-        ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: theme.dividerColor.withValues(alpha: 0.12),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.10,
+                  ),
+                  child: Icon(
+                    Icons.person_rounded,
+                    size: 30,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'My Profile',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Manage your preferences',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          _profileTile(
+            icon: Icons.settings_rounded,
+            title: 'Settings',
+            subtitle: 'Currency, language and preferences',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+          _profileTile(
+            icon: Icons.calculate_rounded,
+            title: 'Finance Calculator',
+            subtitle: 'Calculator and financial tools',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FinanceCalculatorScreen(),
+                ),
+              );
+            },
+          ),
+          _profileTile(
+            icon: Icons.feedback_outlined,
+            title: 'Feedback & Support',
+            subtitle: 'Send feedback or report a problem',
+            onTap: _showFeedbackDialog,
+          ),
+          _profileTile(
+            icon: Icons.help_outline_rounded,
+            title: 'Help & FAQ',
+            subtitle: 'Get help using Expense Manager',
+            onTap: _showHelpDialog,
+          ),
+          _profileTile(
+            icon: Icons.info_outline_rounded,
+            title: 'About',
+            subtitle: 'About Expense Manager',
+            onTap: _showAboutDialog,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _profileOption({
+  Widget _profileTile({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: _cardDecoration(),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 5,
-        ),
-        leading: Container(
-          width: 45,
-          height: 45,
-          decoration: BoxDecoration(
-            color: primaryGreen.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(
-            icon,
-            color: primaryGreen,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 11,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.chevron_right_rounded,
-        ),
+        leading: Icon(icon),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right_rounded),
       ),
     );
   }
 
-  Widget _sectionHeader(
-    String title,
-    String subtitle,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  BoxDecoration _cardDecoration() {
-    final dark =
-        Theme.of(context).brightness == Brightness.dark;
-
-    return BoxDecoration(
-      color: dark
-          ? const Color(0xFF18211E)
-          : Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(
-            alpha: dark ? 0.10 : 0.035,
-          ),
-          blurRadius: 15,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    );
-  }
-
-  double _total(String type) {
-    return transactions
-        .where(
-          (transaction) =>
-              transaction['type'] == type &&
-              transaction['currency'] == 'PKR',
-        )
-        .fold<double>(
-          0,
-          (sum, transaction) =>
-              sum + (transaction['amount'] as double),
-        );
-  }
-
-  String _formatAmount(
-    double amount, [
-    String currencyCode = 'PKR',
-  ]) {
-    final currency = AppCurrencies.find(currencyCode);
-
-    return '${currency.symbol} '
-        '${amount.toStringAsFixed(0)}';
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
-
-  void _openAddTransaction(String type) {
-    Navigator.push(
+  Future<void> _openAddTransaction(bool isIncome) async {
+    await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => AddTransactionScreen(
-          initialType: type,
-          onSaved: (
-            savedType,
-            amount,
-            category,
-            date,
-            note,
-            currency,
-          ) {
-            setState(() {
-              transactions.insert(0, {
-                'type': savedType,
-                'amount': amount,
-                'category': category,
-                'date': date,
-                'note': note,
-                'currency': currency,
-              });
-            });
-          },
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
     );
   }
 
-  void _editTransaction(
-    Map<String, dynamic> transaction,
-  ) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddTransactionScreen(
-          isEditing: true,
-          initialType: transaction['type'],
-          initialAmount: transaction['amount'],
-          initialCategory: transaction['category'],
-          initialDate: transaction['date'],
-          initialNote: transaction['note'],
-          initialCurrency: transaction['currency'],
-          onSaved: (
-            savedType,
-            amount,
-            category,
-            date,
-            note,
-            currency,
-          ) {
-            setState(() {
-              transaction['type'] = savedType;
-              transaction['amount'] = amount;
-              transaction['category'] = category;
-              transaction['date'] = date;
-              transaction['note'] = note;
-              transaction['currency'] = currency;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  void _deleteTransaction(
-    Map<String, dynamic> transaction,
-  ) {
-    showDialog(
+  void _showFeedbackDialog() {
+    showDialog<void>(
       context: context,
-      builder: (dialogContext) {
+      builder: (context) {
         return AlertDialog(
-          title: const Text('Delete Transaction?'),
+          title: const Text('Feedback & Support'),
           content: const Text(
-            'This transaction will be removed from the list.',
+            'You can use this section to send feedback, suggest features, or report a problem.',
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: expenseRed,
-              ),
-              onPressed: () {
-                setState(() {
-                  transactions.remove(transaction);
-                });
-
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Delete'),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
             ),
           ],
         );
@@ -1154,16 +870,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            '$feature will be connected in the next phase.',
+  void _showHelpDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Help & FAQ'),
+          content: const Text(
+            'Use Home for your financial overview, Transactions to manage records, Reports for analysis, Goals for savings targets, and Profile for settings and support.',
           ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAboutDialog() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Expense Manager',
+      applicationVersion: '1.0.0',
+      applicationIcon: const Icon(
+        Icons.account_balance_wallet_rounded,
+        size: 42,
+      ),
+      children: const [
+        Text('A professional personal and business money management app.'),
+      ],
+    );
   }
 }
